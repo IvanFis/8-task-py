@@ -1,0 +1,126 @@
+import csv
+import sqlite3
+from tkinter import Tk, Label, Entry, Button
+
+conn = sqlite3.connect('phone_directory.db')
+cursor = conn.cursor()
+
+
+cursor.execute('''
+             CREATE TABLE IF NOT EXISTS contacts
+             (
+             id INTEGER PRIMARY KEY,
+             name TEXT,
+             surname TEXT,
+             number TEXT
+             )
+             ''')
+
+def add_contact(name, surname, number):
+    if name and surname in cursor:
+        return "Данный контакт уже есть"
+    else:
+        conn[name] = number
+        return "Контакт добавлен"
+
+
+
+def find_contact(name,surname):
+    if name in cursor:
+        return cursor[name]
+    else:
+        return "This contact is not in the phone book"
+
+def delete_contact(name,surname):
+    if name in cursor:
+        del cursor[name]
+        return "Contact was deleted"
+    else:
+        return "This contact was not found"
+
+def save_contacts():
+    with open('book.csv', mode='w',newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Name','Surname', 'Number'])
+        for name, number in cursor.items():
+            writer.writerow([name, number])
+    return "The contacts have been saved"
+
+def load_contacts():
+    cursor.clear()
+    try:
+        with open('book.csv', mode='r') as file:
+            reader = csv.reader(file)
+            next(reader)
+            for row in reader:
+                name, number = row
+                cursor[name] = number
+        return "THe contacts have been uploaded"
+    except FileNotFoundError:
+        return "File not found"
+
+def create_gui():
+    def add_button_click():
+        name = name_entry.get()
+        number = number_entry.get()
+        result = add_contact(name, number)
+        result_label.config(text=result)
+
+    def find_button_click():
+        name = name_entry.get()
+        result = find_contact(name)
+        result_label.config(text=result)
+
+    def delete_button_click():
+        name = name_entry.get()
+        result = delete_contact(name)
+        result_label.config(text=result)
+
+    def save_button_click():
+        result = save_contacts()
+        result_label.config(text=result)
+
+    def load_button_click():
+        result = load_contacts()
+        result_label.config(text=result)
+
+    window = Tk()
+    window.title("Phone directory")
+
+    name_label = Label(window, text="Name:")
+    name_label.pack()
+    name_entry = Entry(window)
+    name_entry.pack()
+
+    name_label = Label(window, text="Surname:")
+    name_label.pack()
+    name_entry = Entry(window)
+    name_entry.pack()
+
+    number_label = Label(window, text="Number:")
+    number_label.pack()
+    number_entry = Entry(window)
+    number_entry.pack()
+
+    add_button = Button(window, text="Add", command=add_button_click)
+    add_button.pack()
+
+    find_button = Button(window, text="Find", command=find_button_click)
+    find_button.pack()
+
+    delete_button = Button(window, text="Delete", command=delete_button_click)
+    delete_button.pack()
+
+    save_button = Button(window, text="Save", command=save_button_click)
+    save_button.pack()
+
+    load_button = Button(window, text="Load", command=load_button_click)
+    load_button.pack()
+
+    result_label = Label(window, text="")
+    result_label.pack
+    window.mainloop()
+
+create_gui()
+
+conn.close()
